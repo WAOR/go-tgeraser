@@ -3,6 +3,7 @@ module github.com/en9inerd/go-tgeraser
 go 1.26.1
 
 require (
+	github.com/en9inerd/go-pkgs v0.5.0
 	github.com/gotd/contrib v0.21.1
 	github.com/gotd/td v0.141.0
 	golang.org/x/term v0.41.0

@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/en9inerd/go-pkgs/flagpair"
 )
 
 type Config struct {
@@ -50,28 +51,21 @@ func ParseConfig(args []string, getenv func(string) string) (*Config, error) {
 		return fallback
 	}
 
-	fs := flag.NewFlagSet("tgeraser", flag.ContinueOnError)
+	r := flagpair.New("tgeraser")
 
-	sessionDir := fs.String("directory", getEnv("TG_SESSION_DIR", "~/.tgeraser/"), "Session storage directory")
-	fs.StringVar(sessionDir, "d", getEnv("TG_SESSION_DIR", "~/.tgeraser/"), "Session storage directory (shorthand)")
-	sessionName := fs.String("session", "", "Session name")
-	entityType := fs.String("entity-type", "chat", "Entity type: any, chat, channel, user")
-	peers := fs.String("peers", "", "Comma-separated peer IDs or usernames")
-	fs.StringVar(peers, "p", "", "Comma-separated peer IDs or usernames (shorthand)")
-	limit := fs.Int("limit", 0, "Number of recent chats to show")
-	fs.IntVar(limit, "l", 0, "Number of recent chats to show (shorthand)")
-	wipeEverything := fs.Bool("wipe-everything", false, "Delete messages from all entities of the specified type")
-	fs.BoolVar(wipeEverything, "w", false, "Delete messages from all entities (shorthand)")
-	olderThan := fs.String("older-than", "", `Delete messages older than duration (e.g., "3*days", "5*hours")`)
-	fs.StringVar(olderThan, "o", "", `Delete messages older than duration (shorthand)`)
-	mediaType := fs.String("media-type", "", "Comma-separated media types: photo, video, audio, voice, video_note, gif, document, media")
-	fs.StringVar(mediaType, "m", "", "Media type filter (shorthand)")
-	deleteConversation := fs.Bool("delete-conversation", false, "Delete entire conversation (user peers only)")
-	verbose := fs.Bool("verbose", false, "Enable verbose logging")
-	fs.BoolVar(verbose, "v", false, "Enable verbose logging (shorthand)")
-	showVersion := fs.Bool("version", false, "Show version")
+	sessionDir := r.String("directory", "d", getEnv("TG_SESSION_DIR", "~/.tgeraser/"), "Session storage directory")
+	sessionName := r.String("session", "", "", "Session name")
+	entityType := r.String("entity-type", "", "chat", "Entity type: any, chat, channel, user")
+	peers := r.String("peers", "p", "", "Comma-separated peer IDs or usernames")
+	limit := r.Int("limit", "l", 0, "Number of recent chats to show")
+	wipeEverything := r.Bool("wipe-everything", "w", false, "Delete messages from all entities of the specified type")
+	olderThan := r.String("older-than", "o", "", `Delete messages older than duration (e.g., "3*days", "5*hours")`)
+	mediaType := r.String("media-type", "m", "", "Comma-separated media types: photo, video, audio, voice, video_note, gif, document, media")
+	deleteConversation := r.Bool("delete-conversation", "", false, "Delete entire conversation (user peers only)")
+	verbose := r.Bool("verbose", "v", false, "Enable verbose logging")
+	showVersion := r.Bool("version", "", false, "Show version")
 
-	if err := fs.Parse(args[1:]); err != nil {
+	if err := r.Parse(args[1:]); err != nil {
 		return nil, err
 	}
 

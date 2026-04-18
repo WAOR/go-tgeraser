@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -49,9 +51,6 @@ func versionString() string {
 }
 
 func run(ctx context.Context, args []string, getenv func(string) string) error {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
 	cfg, err := config.ParseConfig(args, getenv)
 	if err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
@@ -73,6 +72,9 @@ func run(ctx context.Context, args []string, getenv func(string) string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve session: %w", err)
 	}
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	waiter := floodwait.NewSimpleWaiter().WithMaxRetries(10)
 
@@ -111,6 +113,9 @@ func run(ctx context.Context, args []string, getenv func(string) string) error {
 func main() {
 	ctx := context.Background()
 	if err := run(ctx, os.Args, os.Getenv); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return
+		}
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
