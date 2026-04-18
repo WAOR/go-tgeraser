@@ -1,6 +1,6 @@
 # go-tgeraser
 
-Go implementation of [TgEraser](https://github.com/en9inerd/tgeraser) — a tool that deletes all your messages from a chat, channel, or conversation on Telegram without requiring admin privileges.
+Go implementation of [TgEraser](https://github.com/en9inerd/tgeraser) - a tool that deletes all your messages from a chat, channel, or conversation on Telegram without requiring admin privileges.
 
 ## Installation
 
