@@ -4,7 +4,17 @@ Go implementation of [TgEraser](https://github.com/en9inerd/tgeraser) - a tool t
 
 ## Installation
 
-Download a pre-built binary from the [Releases](https://github.com/en9inerd/go-tgeraser/releases) page, or build from source:
+### Homebrew (macOS / Linux)
+
+```
+brew install en9inerd/tap/tgeraser
+```
+
+### Pre-built binaries
+
+Download from the [Releases](https://github.com/en9inerd/go-tgeraser/releases) page.
+
+### From source
 
 ```
 go install github.com/en9inerd/go-tgeraser/cmd/tgeraser@latest

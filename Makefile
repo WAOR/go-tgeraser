@@ -1,7 +1,7 @@
 GO=go
 BUILD_DIR=build
 DIST_DIR=dist
-BINARY_NAME=$(shell basename $(PWD))
+BINARY_NAME=tgeraser
 BINARY_PATH=$(BUILD_DIR)/$(BINARY_NAME)
 
 all: build
