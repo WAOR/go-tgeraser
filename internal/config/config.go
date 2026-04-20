@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -243,10 +245,7 @@ var validMediaTypes = map[string]bool{
 func validateMediaTypes(types []string) error {
 	for _, t := range types {
 		if !validMediaTypes[t] {
-			valid := make([]string, 0, len(validMediaTypes))
-			for k := range validMediaTypes {
-				valid = append(valid, k)
-			}
+			valid := slices.Sorted(maps.Keys(validMediaTypes))
 			return fmt.Errorf("invalid media type %q: valid types are %s", t, strings.Join(valid, ", "))
 		}
 	}

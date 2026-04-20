@@ -9,8 +9,7 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-// getAllDialogs fetches dialogs from the Telegram API using gotd's query iterator.
-// Pass limit=0 to fetch all dialogs.
+// getAllDialogs fetches dialogs; limit=0 means no cap.
 func (e *Eraser) getAllDialogs(ctx context.Context, limit int) ([]entity, error) {
 	var allEntities []entity
 
@@ -28,10 +27,6 @@ func (e *Eraser) getAllDialogs(ctx context.Context, limit int) ([]entity, error)
 
 	if err != nil && err != errLimitReached {
 		return nil, fmt.Errorf("failed to get dialogs: %w", err)
-	}
-
-	if limit > 0 && len(allEntities) > limit {
-		allEntities = allEntities[:limit]
 	}
 
 	return allEntities, nil

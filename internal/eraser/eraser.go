@@ -42,15 +42,15 @@ func (e *Eraser) Run(ctx context.Context) error {
 	}
 
 	startTime := time.Now()
-	fmt.Printf("\nDeletion started at: %s (local)\n", startTime.Format(time.RFC3339))
+	fmt.Printf("\nDeletion started at: %s\n", startTime.Format(time.RFC3339))
 
 	if err := e.deleteMessagesFromEntities(ctx); err != nil {
 		return err
 	}
 
 	finishTime := time.Now()
-	fmt.Printf("Deletion finished at: %s (local)\n", finishTime.Format(time.RFC3339))
-	fmt.Printf("Duration: %s\n\n", finishTime.Sub(startTime).Round(time.Second))
+	fmt.Printf("Deletion finished at: %s\n", finishTime.Format(time.RFC3339))
+	fmt.Printf("Duration: %s\n\n", finishTime.Sub(startTime).Round(time.Millisecond))
 
 	return nil
 }
