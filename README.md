@@ -10,6 +10,18 @@ Go implementation of [TgEraser](https://github.com/en9inerd/tgeraser) - a tool t
 brew install en9inerd/tap/tgeraser
 ```
 
+### Install script (Linux / macOS)
+
+```
+curl -fsSL https://raw.githubusercontent.com/en9inerd/go-tgeraser/master/scripts/install.sh | sh
+```
+
+Detects OS/arch, verifies SHA256, installs to `/usr/local/bin`. Override with env vars:
+
+```
+curl -fsSL https://raw.githubusercontent.com/en9inerd/go-tgeraser/master/scripts/install.sh | VERSION=1.2.3 INSTALL_DIR=$HOME/.local/bin sh
+```
+
 ### Pre-built binaries
 
 Download from the [Releases](https://github.com/en9inerd/go-tgeraser/releases) page.
