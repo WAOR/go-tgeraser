@@ -3,6 +3,8 @@ package eraser
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/gotd/td/telegram/query"
@@ -11,6 +13,11 @@ import (
 )
 
 const deleteBatchSize = 100
+
+type msgRef struct {
+	id        int
+	isService bool
+}
 
 func (e *Eraser) deleteMessagesFromEntities(ctx context.Context) error {
 	var maxDate int
@@ -27,16 +34,31 @@ func (e *Eraser) deleteMessagesFromEntities(ctx context.Context) error {
 		}
 
 		printHeader(fmt.Sprintf("Getting messages from '%s'...", ent.displayName))
-		msgIDs, err := e.getMessagesToDelete(ctx, ent, maxDate)
+		msgs, err := e.getMessagesToDelete(ctx, ent, maxDate)
 		if err != nil {
 			return fmt.Errorf("failed to get messages from %q: %w", ent.displayName, err)
 		}
 
-		fmt.Printf("\nFound %d messages to delete.\n", len(msgIDs))
-		if len(msgIDs) > 0 {
-			if err := e.deleteMessages(ctx, ent, msgIDs); err != nil {
-				return fmt.Errorf("failed to delete messages from %q: %w", ent.displayName, err)
+		if len(msgs) == 0 {
+			fmt.Println("\nNothing to delete.")
+			continue
+		}
+
+		ids := make([]int, len(msgs))
+		var service int
+		for i, m := range msgs {
+			ids[i] = m.id
+			if m.isService {
+				service++
 			}
+		}
+		fmt.Printf("\nFound %d messages (%d regular, %d service).\n", len(msgs), len(msgs)-service, service)
+		if service > 0 && ent.peerType != "user" {
+			fmt.Println("Note: service messages may not delete without admin rights; Telegram silently skips unauthorized deletions.")
+		}
+
+		if err := e.deleteMessages(ctx, ent, ids); err != nil {
+			return fmt.Errorf("failed to delete messages from %q: %w", ent.displayName, err)
 		}
 	}
 	return nil
@@ -65,37 +87,33 @@ func (e *Eraser) deleteConversation(ctx context.Context, ent entity) error {
 	return nil
 }
 
-func (e *Eraser) getMessagesToDelete(ctx context.Context, ent entity, maxDate int) ([]int, error) {
+func (e *Eraser) getMessagesToDelete(ctx context.Context, ent entity, maxDate int) ([]msgRef, error) {
 	if len(e.cfg.MediaTypes) == 0 {
 		return e.searchMessages(ctx, ent.peer, &tg.InputMessagesFilterEmpty{}, maxDate)
 	}
 
 	types := expandMediaTypes(e.cfg.MediaTypes)
-	idSet := make(map[int]struct{})
+	seen := make(map[int]msgRef)
 	for _, mediaType := range types {
 		filter := mediaFilter(mediaType)
 		if filter == nil {
 			continue
 		}
 		fmt.Printf("  Fetching %s...\n", mediaType)
-		ids, err := e.searchMessages(ctx, ent.peer, filter, maxDate)
+		msgs, err := e.searchMessages(ctx, ent.peer, filter, maxDate)
 		if err != nil {
 			return nil, err
 		}
-		for _, id := range ids {
-			idSet[id] = struct{}{}
+		for _, m := range msgs {
+			seen[m.id] = m
 		}
 	}
 
-	ids := make([]int, 0, len(idSet))
-	for id := range idSet {
-		ids = append(ids, id)
-	}
-	return ids, nil
+	return slices.Collect(maps.Values(seen)), nil
 }
 
-func (e *Eraser) searchMessages(ctx context.Context, peer tg.InputPeerClass, filter tg.MessagesFilterClass, maxDate int) ([]int, error) {
-	var allIDs []int
+func (e *Eraser) searchMessages(ctx context.Context, peer tg.InputPeerClass, filter tg.MessagesFilterClass, maxDate int) ([]msgRef, error) {
+	var all []msgRef
 
 	builder := query.Messages(e.api).Search(peer).
 		FromID(&tg.InputPeerSelf{}).
@@ -107,45 +125,28 @@ func (e *Eraser) searchMessages(ctx context.Context, peer tg.InputPeerClass, fil
 	}
 
 	err := builder.ForEach(ctx, func(_ context.Context, elem messages.Elem) error {
-		allIDs = append(allIDs, elem.Msg.GetID())
+		_, isService := elem.Msg.(*tg.MessageService)
+		all = append(all, msgRef{id: elem.Msg.GetID(), isService: isService})
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("message search failed: %w", err)
 	}
 
-	e.logger.Debug("fetched messages", "total", len(allIDs))
-	return allIDs, nil
+	e.logger.Debug("fetched messages", "total", len(all))
+	return all, nil
 }
 
 func (e *Eraser) deleteMessages(ctx context.Context, ent entity, msgIDs []int) error {
 	printHeader(fmt.Sprintf("Deleting messages from '%s'...", ent.displayName))
 
-	totalDeleted := 0
 	for i := 0; i < len(msgIDs); i += deleteBatchSize {
 		end := min(i+deleteBatchSize, len(msgIDs))
-		batch := msgIDs[i:end]
-
-		deleted, err := e.deleteBatch(ctx, ent, batch)
-		if err != nil {
-			return err
+		if _, err := e.sender.To(ent.peer).Revoke().Messages(ctx, msgIDs[i:end]...); err != nil {
+			return fmt.Errorf("message deletion failed: %w", err)
 		}
-		totalDeleted += deleted
 	}
 
-	fmt.Printf("\nDeleted %d messages of %d in '%s' entity.\n", totalDeleted, len(msgIDs), ent.displayName)
-	if totalDeleted < len(msgIDs) {
-		fmt.Printf("Remaining %d messages can't be deleted without admin rights because they are service messages.\n",
-			len(msgIDs)-totalDeleted)
-	}
-	fmt.Println()
+	fmt.Printf("\nRequested deletion of %d messages in '%s' entity.\n\n", len(msgIDs), ent.displayName)
 	return nil
-}
-
-func (e *Eraser) deleteBatch(ctx context.Context, ent entity, ids []int) (int, error) {
-	result, err := e.sender.To(ent.peer).Revoke().Messages(ctx, ids...)
-	if err != nil {
-		return 0, fmt.Errorf("message deletion failed: %w", err)
-	}
-	return result.PtsCount, nil
 }

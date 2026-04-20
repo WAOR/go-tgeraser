@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -10,9 +9,9 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"syscall"
 
+	"github.com/en9inerd/go-pkgs/promptio"
 	"github.com/en9inerd/go-tgeraser/internal/config"
 	"github.com/en9inerd/go-tgeraser/internal/eraser"
 	"github.com/en9inerd/go-tgeraser/internal/log"
@@ -21,7 +20,6 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
-	"golang.org/x/term"
 )
 
 var version = "dev"
@@ -100,12 +98,7 @@ func run(ctx context.Context, args []string, getenv func(string) string) error {
 			return fmt.Errorf("auth failed: %w", err)
 		}
 
-		self, err := client.Self(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get self: %w", err)
-		}
-
-		e := eraser.New(client.API(), self, cfg, logger)
+		e := eraser.New(client.API(), cfg, logger)
 		return e.Run(ctx)
 	})
 }
@@ -116,30 +109,27 @@ func main() {
 		if errors.Is(err, flag.ErrHelp) {
 			return
 		}
+		if errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, "Cancelled.")
+			os.Exit(130)
+		}
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-// terminalAuth implements auth.UserAuthenticator for interactive terminal sessions.
 type terminalAuth struct{}
 
-func (a *terminalAuth) Phone(_ context.Context) (string, error) {
-	return prompt("Enter your phone number: ")
+func (a *terminalAuth) Phone(ctx context.Context) (string, error) {
+	return promptio.ReadLine(ctx, "Enter your phone number: ")
 }
 
-func (a *terminalAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
-	return prompt("Enter the code you just received: ")
+func (a *terminalAuth) Code(ctx context.Context, _ *tg.AuthSentCode) (string, error) {
+	return promptio.ReadLine(ctx, "Enter the code you just received: ")
 }
 
-func (a *terminalAuth) Password(_ context.Context) (string, error) {
-	fmt.Print("Two-step verification is enabled. Enter your password: ")
-	password, err := term.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Println()
-	if err != nil {
-		return "", fmt.Errorf("failed to read password: %w", err)
-	}
-	return string(password), nil
+func (a *terminalAuth) Password(ctx context.Context) (string, error) {
+	return promptio.ReadPassword(ctx, "Two-step verification is enabled. Enter your password: ")
 }
 
 func (a *terminalAuth) AcceptTermsOfService(_ context.Context, _ tg.HelpTermsOfService) error {
@@ -148,16 +138,4 @@ func (a *terminalAuth) AcceptTermsOfService(_ context.Context, _ tg.HelpTermsOfS
 
 func (a *terminalAuth) SignUp(_ context.Context) (auth.UserInfo, error) {
 	return auth.UserInfo{}, fmt.Errorf("sign-up is not supported; use an existing Telegram account")
-}
-
-func prompt(message string) (string, error) {
-	fmt.Print(message)
-	scanner := bufio.NewScanner(os.Stdin)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			return "", fmt.Errorf("failed to read input: %w", err)
-		}
-		return "", fmt.Errorf("no input received")
-	}
-	return strings.TrimSpace(scanner.Text()), nil
 }

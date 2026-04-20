@@ -150,8 +150,8 @@ func TestParseConfig(t *testing.T) {
 
 	t.Run("env vars", func(t *testing.T) {
 		env := map[string]string{
-			"TG_API_ID":     "99999",
-			"TG_API_HASH":   "envhash",
+			"TG_API_ID":      "99999",
+			"TG_API_HASH":    "envhash",
 			"TG_SESSION_DIR": "/tmp/sessions/",
 		}
 		cfg, err := ParseConfig([]string{"tgeraser"}, func(key string) string { return env[key] })

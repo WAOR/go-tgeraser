@@ -1,15 +1,14 @@
 package eraser
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/en9inerd/go-pkgs/promptio"
 	"github.com/en9inerd/go-tgeraser/internal/config"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
@@ -18,17 +17,15 @@ import (
 type Eraser struct {
 	api      *tg.Client
 	sender   *message.Sender
-	self     *tg.User
 	cfg      *config.Config
 	logger   *slog.Logger
 	entities []entity
 }
 
-func New(api *tg.Client, self *tg.User, cfg *config.Config, logger *slog.Logger) *Eraser {
+func New(api *tg.Client, cfg *config.Config, logger *slog.Logger) *Eraser {
 	return &Eraser{
 		api:    api,
 		sender: message.NewSender(api),
-		self:   self,
 		cfg:    cfg,
 		logger: logger,
 	}
@@ -55,7 +52,6 @@ func (e *Eraser) Run(ctx context.Context) error {
 	fmt.Printf("Deletion finished at: %s (local)\n", finishTime.Format(time.RFC3339))
 	fmt.Printf("Duration: %s\n\n", finishTime.Sub(startTime).Round(time.Second))
 
-	e.entities = nil
 	return nil
 }
 
@@ -131,14 +127,13 @@ func (e *Eraser) getUserSelectedEntity(ctx context.Context) error {
 		fmt.Printf("  %d. %s\t | %d\n", i+1, ent.displayName, ent.id)
 	}
 
-	fmt.Print("\nChoose peer: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if !scanner.Scan() {
-		return fmt.Errorf("failed to read input")
+	input, err := promptio.ReadLine(ctx, "\nChoose peer: ")
+	if err != nil {
+		return fmt.Errorf("failed to read input: %w", err)
 	}
-	num, err := strconv.Atoi(strings.TrimSpace(scanner.Text()))
+	num, err := strconv.Atoi(input)
 	if err != nil || num < 1 || num > len(filtered) {
-		return fmt.Errorf("invalid choice: %s", scanner.Text())
+		return fmt.Errorf("invalid choice: %s", input)
 	}
 
 	chosen := filtered[num-1]

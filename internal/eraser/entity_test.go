@@ -72,9 +72,9 @@ func TestExpandMediaTypes(t *testing.T) {
 
 func TestUserDisplayName(t *testing.T) {
 	tests := []struct {
-		name  string
-		user  *tg.User
-		want  string
+		name string
+		user *tg.User
+		want string
 	}{
 		{"first and last", &tg.User{FirstName: "John", LastName: "Doe"}, "John Doe"},
 		{"first only", &tg.User{FirstName: "Alice"}, "Alice"},
@@ -118,8 +118,8 @@ func TestIsNumeric(t *testing.T) {
 
 func TestMediaFilter(t *testing.T) {
 	tests := []struct {
-		input   string
-		wantNil bool
+		input    string
+		wantNil  bool
 		wantType string
 	}{
 		{"photo", false, "*tg.InputMessagesFilterPhotos"},
