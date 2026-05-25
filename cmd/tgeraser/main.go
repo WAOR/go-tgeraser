@@ -19,6 +19,7 @@ import (
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
+	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
 )
 
@@ -76,7 +77,15 @@ func run(ctx context.Context, args []string, getenv func(string) string) error {
 
 	waiter := floodwait.NewSimpleWaiter().WithMaxRetries(10)
 
-	client := telegram.NewClient(cfg.APIID, cfg.APIHash, telegram.Options{
+	var resolver dcs.Resolver
+	if cfg.ProxyAddr != "" {
+		resolver, err = dcs.MTProxy(cfg.ProxyAddr, cfg.ProxySecret, dcs.MTProxyOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to build proxy resolver: %w", err)
+		}
+	}
+
+	opts := telegram.Options{
 		SessionStorage: &session.FileStorage{Path: sessionPath},
 		Middlewares: []telegram.Middleware{
 			waiter,
@@ -86,7 +95,12 @@ func run(ctx context.Context, args []string, getenv func(string) string) error {
 			SystemVersion: runtime.Version(),
 			AppVersion:    version,
 		},
-	})
+	}
+	if resolver != nil {
+		opts.Resolver = resolver
+	}
+
+	client := telegram.NewClient(cfg.APIID, cfg.APIHash, opts)
 
 	fmt.Println("Connecting to Telegram servers...")
 	return client.Run(ctx, func(ctx context.Context) error {

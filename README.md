@@ -65,6 +65,7 @@ Flags:
     -o, --older-than STRING     Delete messages older than duration (e.g., "3*days", "5*hours")
     -m, --media-type TYPES      Comma-separated media types: photo, video, audio, voice,
                                 video_note, gif, document, media
+    --proxy HOST:PORT:SECRET    MTProto proxy (e.g. 1.2.3.4:443:deadbeef)
     -v, --verbose               Enable verbose logging
     --version                   Show version
 ```
@@ -91,6 +92,11 @@ tgeraser --session myaccount -p @chatname -m "photo,video"
 Delete entire conversation with a user:
 ```
 tgeraser --session myaccount -p @username --entity-type user --delete-conversation
+```
+
+Connect via an MTProto proxy:
+```
+tgeraser --session myaccount --proxy 1.2.3.4:443:ee367f1d2b4c7e9a0f5d8b3c6a2e1f4d
 ```
 
 ## Contributing

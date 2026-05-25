@@ -2,6 +2,7 @@ package config
 
 import (
 	"bufio"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,6 +28,8 @@ type Config struct {
 	OlderThan          int // seconds
 	DeleteConversation bool
 	MediaTypes         []string
+	ProxyAddr          string
+	ProxySecret        []byte
 	Verbose            bool
 	ShowVersion        bool
 }
@@ -64,6 +67,7 @@ func ParseConfig(args []string, getenv func(string) string) (*Config, error) {
 	olderThan := r.String("older-than", "o", "", `Delete messages older than duration (e.g., "3*days", "5*hours")`)
 	mediaType := r.String("media-type", "m", "", "Comma-separated media types: photo, video, audio, voice, video_note, gif, document, media")
 	deleteConversation := r.Bool("delete-conversation", "", false, "Delete entire conversation (user peers only)")
+	proxy := r.String("proxy", "", "", "MTProto proxy (HOST:PORT:SECRET)")
 	verbose := r.Bool("verbose", "v", false, "Enable verbose logging")
 	showVersion := r.Bool("version", "", false, "Show version")
 
@@ -106,6 +110,16 @@ func ParseConfig(args []string, getenv func(string) string) (*Config, error) {
 		return nil, fmt.Errorf("invalid entity type %q: must be one of: any, chat, channel, user", *entityType)
 	}
 
+	var proxyAddr string
+	var proxySecret []byte
+	if *proxy != "" {
+		addr, secret, err := parseProxy(*proxy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --proxy value: %w", err)
+		}
+		proxyAddr, proxySecret = addr, secret
+	}
+
 	return &Config{
 		APIID:              getEnvInt("TG_API_ID", 0),
 		APIHash:            getEnv("TG_API_HASH", ""),
@@ -118,6 +132,8 @@ func ParseConfig(args []string, getenv func(string) string) (*Config, error) {
 		OlderThan:          olderThanSec,
 		DeleteConversation: *deleteConversation,
 		MediaTypes:         mediaTypes,
+		ProxyAddr:          proxyAddr,
+		ProxySecret:        proxySecret,
 		Verbose:            *verbose,
 		ShowVersion:        *showVersion,
 	}, nil
@@ -250,6 +266,26 @@ func validateMediaTypes(types []string) error {
 		}
 	}
 	return nil
+}
+
+func parseProxy(s string) (addr string, secret []byte, err error) {
+	parts := strings.SplitN(s, ":", 3)
+	if len(parts) != 3 {
+		return "", nil, fmt.Errorf("must be HOST:PORT:SECRET")
+	}
+	host, portStr, secretHex := parts[0], parts[1], parts[2]
+	if host == "" {
+		return "", nil, fmt.Errorf("host cannot be empty")
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 1 || port > 65535 {
+		return "", nil, fmt.Errorf("invalid port %q: must be 1-65535", portStr)
+	}
+	secret, err = hex.DecodeString(secretHex)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid secret: %w", err)
+	}
+	return fmt.Sprintf("%s:%d", host, port), secret, nil
 }
 
 func ParseTimePeriod(s string) (int, error) {
