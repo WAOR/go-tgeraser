@@ -1,4 +1,4 @@
-module github.com/en9inerd/go-tgeraser
+module github.com/WAOR/go-tgeraser
 
 go 1.26.1
 

@@ -12,9 +12,9 @@ import (
 	"syscall"
 
 	"github.com/en9inerd/go-pkgs/promptio"
-	"github.com/en9inerd/go-tgeraser/internal/config"
-	"github.com/en9inerd/go-tgeraser/internal/eraser"
-	"github.com/en9inerd/go-tgeraser/internal/log"
+	"github.com/WAOR/go-tgeraser/internal/config"
+	"github.com/WAOR/go-tgeraser/internal/eraser"
+	"github.com/WAOR/go-tgeraser/internal/log"
 	"github.com/gotd/contrib/middleware/floodwait"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"

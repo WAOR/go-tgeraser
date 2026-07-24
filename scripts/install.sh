@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO="en9inerd/go-tgeraser"
+REPO="WAOR/go-tgeraser"
 BIN_NAME="tgeraser"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 VERSION="${VERSION:-latest}"

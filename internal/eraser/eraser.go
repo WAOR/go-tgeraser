@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/en9inerd/go-pkgs/promptio"
-	"github.com/en9inerd/go-tgeraser/internal/config"
+	"github.com/WAOR/go-tgeraser/internal/config"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 )
