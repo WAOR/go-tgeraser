@@ -105,6 +105,10 @@ func ParseConfig(args []string, getenv func(string) string) (*Config, error) {
 		}
 	}
 
+	if *deleteConversation && len(mediaTypes) > 0 {
+		return nil, errors.New("--delete-conversation cannot be combined with --media-type")
+	}
+
 	validEntityTypes := map[string]bool{"any": true, "chat": true, "channel": true, "user": true}
 	if !validEntityTypes[*entityType] {
 		return nil, fmt.Errorf("invalid entity type %q: must be one of: any, chat, channel, user", *entityType)
@@ -298,6 +302,9 @@ func ParseTimePeriod(s string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("invalid number %q: %w", parts[0], err)
 	}
+	if value <= 0 {
+		return 0, fmt.Errorf("duration must be positive, got %q", parts[0])
+	}
 
 	multipliers := map[string]int{
 		"seconds": 1,
@@ -309,6 +316,11 @@ func ParseTimePeriod(s string) (int, error) {
 	mult, ok := multipliers[parts[1]]
 	if !ok {
 		return 0, fmt.Errorf("invalid time unit %q: use seconds, minutes, hours, days, or weeks", parts[1])
+	}
+
+	const maxPeriodSec = 20 * 365 * 86400
+	if value > maxPeriodSec/mult {
+		return 0, fmt.Errorf("duration %q is too large: maximum is 20 years", s)
 	}
 
 	return value * mult, nil

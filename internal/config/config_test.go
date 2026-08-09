@@ -22,6 +22,9 @@ func TestParseTimePeriod(t *testing.T) {
 		{"noduration", 0, true},
 		{"", 0, true},
 		{"3*", 0, true},
+		{"-3*days", 0, true},
+		{"0*days", 0, true},
+		{"1000000*weeks", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -119,7 +122,6 @@ func TestParseConfig(t *testing.T) {
 			"-w",
 			"-o", "7*days",
 			"-m", "photo,video",
-			"--delete-conversation",
 		}
 		cfg, err := ParseConfig(args, func(string) string { return "" })
 		if err != nil {
@@ -143,8 +145,26 @@ func TestParseConfig(t *testing.T) {
 		if len(cfg.MediaTypes) != 2 || cfg.MediaTypes[0] != "photo" || cfg.MediaTypes[1] != "video" {
 			t.Errorf("MediaTypes = %v, want [photo video]", cfg.MediaTypes)
 		}
+	})
+
+	t.Run("delete-conversation with older-than", func(t *testing.T) {
+		args := []string{"tgeraser", "--delete-conversation", "-o", "7*days"}
+		cfg, err := ParseConfig(args, func(string) string { return "" })
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if !cfg.DeleteConversation {
 			t.Error("DeleteConversation should be true")
+		}
+		if cfg.OlderThan != 7*86400 {
+			t.Errorf("OlderThan = %d, want %d", cfg.OlderThan, 7*86400)
+		}
+	})
+
+	t.Run("delete-conversation rejects media-type", func(t *testing.T) {
+		args := []string{"tgeraser", "--delete-conversation", "-m", "photo"}
+		if _, err := ParseConfig(args, func(string) string { return "" }); err == nil {
+			t.Error("expected error combining --delete-conversation with --media-type")
 		}
 	})
 

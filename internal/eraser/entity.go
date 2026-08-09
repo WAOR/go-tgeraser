@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gotd/td/telegram/message/peer"
 	"github.com/gotd/td/tg"
@@ -97,7 +98,7 @@ func isNumeric(s string) bool {
 }
 
 func printHeader(title string) {
-	border := strings.Repeat("=", len(title))
+	border := strings.Repeat("=", utf8.RuneCountInString(title))
 	fmt.Printf("\n==%s==\n", border)
 	fmt.Printf("= %s =\n", title)
 	fmt.Printf("==%s==\n", border)

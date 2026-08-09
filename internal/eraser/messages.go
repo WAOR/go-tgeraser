@@ -27,7 +27,7 @@ func (e *Eraser) deleteMessagesFromEntities(ctx context.Context) error {
 
 	for _, ent := range e.entities {
 		if ent.peerType == "user" && e.cfg.DeleteConversation {
-			if err := e.deleteConversation(ctx, ent); err != nil {
+			if err := e.deleteConversation(ctx, ent, maxDate); err != nil {
 				return err
 			}
 			continue
@@ -64,16 +64,19 @@ func (e *Eraser) deleteMessagesFromEntities(ctx context.Context) error {
 	return nil
 }
 
-func (e *Eraser) deleteConversation(ctx context.Context, ent entity) error {
-	printHeader(fmt.Sprintf("Deleting entire conversation with user '%s'...", ent.displayName))
+func (e *Eraser) deleteConversation(ctx context.Context, ent entity, maxDate int) error {
+	printHeader(fmt.Sprintf("Deleting conversation with user '%s'...", ent.displayName))
+
+	req := &tg.MessagesDeleteHistoryRequest{
+		Peer:  ent.peer,
+		MaxID: 0,
+	}
+	req.SetRevoke(true)
+	if maxDate > 0 {
+		req.SetMaxDate(maxDate)
+	}
 
 	for {
-		req := &tg.MessagesDeleteHistoryRequest{
-			Peer:  ent.peer,
-			MaxID: 0,
-		}
-		req.SetRevoke(true)
-
 		result, err := e.api.MessagesDeleteHistory(ctx, req)
 		if err != nil {
 			return fmt.Errorf("failed to delete conversation with %q: %w", ent.displayName, err)
@@ -83,7 +86,7 @@ func (e *Eraser) deleteConversation(ctx context.Context, ent entity) error {
 		}
 	}
 
-	fmt.Printf("\nDeleted entire conversation with user '%s'.\n\n", ent.displayName)
+	fmt.Printf("\nDeleted conversation with user '%s'.\n\n", ent.displayName)
 	return nil
 }
 
