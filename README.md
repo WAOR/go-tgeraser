@@ -61,7 +61,8 @@ Flags:
     -p, --peers PEER_ID         Comma-separated peer IDs or usernames
     -l, --limit NUM             Number of recent chats to show
     -w, --wipe-everything       Delete messages from all entities of the specified type
-    --delete-conversation       Delete entire conversation (user peers only)
+    --delete-conversation       Delete entire conversation for both sides (user peers
+                                only). Not compatible with --media-type.
     -o, --older-than STRING     Delete messages older than duration (e.g., "3*days", "5*hours")
     -m, --media-type TYPES      Comma-separated media types: photo, video, audio, voice,
                                 video_note, gif, document, media

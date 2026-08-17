@@ -36,7 +36,12 @@ func (e *Eraser) getAllDialogs(ctx context.Context, limit int) ([]entity, error)
 var errLimitReached = fmt.Errorf("limit reached")
 
 func entityFromDialogElem(elem dialogs.Elem) *entity {
-	switch p := elem.Dialog.GetPeer().(type) {
+	dlg, ok := elem.Dialog.(*tg.Dialog)
+	if !ok {
+		return nil
+	}
+
+	switch p := dlg.Peer.(type) {
 	case *tg.PeerUser:
 		if user, ok := elem.Entities.User(p.UserID); ok {
 			return &entity{
